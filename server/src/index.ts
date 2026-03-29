@@ -1,10 +1,15 @@
 import { WebSocketServer } from 'ws';
-import { randomUUID } from 'crypto';
-import { WSMessage } from './types';
-import { User } from './types';
+import type { WebSocket } from 'ws';
+import { WSMessage, User, Game } from './types';
+
+import { handleReg } from './handlers/registerLogin';
+import { handleCreateGame } from './handlers/createGame';
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+// hash
 const users = new Map<string, User>();
+const games = new Map<string, Game>();
+const clients = new Map<WebSocket, User>();
 // WebSocket server
 const wss = new WebSocketServer({ port: PORT });
 
@@ -13,38 +18,12 @@ wss.on('connection', (ws) => {
     const wsMessage: WSMessage = JSON.parse(message.toString());
     const { type, data } = wsMessage;
 
-    const handleReg = (data: User) => {
-      const { password, name } = data;
-      const user = users.get(name);
-      const res = {
-        ...wsMessage,
-        data: { name, index: '', error: false, errorText: '' },
-      };
-      if (user) {
-        const isValidCredentials = user.password === password && user.name === name;
-        if (isValidCredentials) {
-          res.data.index = user.index;
-        }
-      } else {
-        if (name === '') {
-          res.data.error = true;
-          res.data.errorText = 'Invalid user name';
-        } else {
-          const newUserIndex = randomUUID();
-          users.set(name, { ...data, index: newUserIndex });
-          res.data.index = newUserIndex;
-        }
-      }
-      const preparedData = JSON.stringify(res);
-      ws.send(preparedData);
-    };
-
     switch (type) {
       case 'reg':
-        handleReg(data);
+        handleReg({ data, users, wsMessage, ws, clients });
         break;
       case 'create_game':
-        console.log(1);
+        handleCreateGame({ data, games, ws, clients });
         break;
       case 'join_game':
         console.log(1);
