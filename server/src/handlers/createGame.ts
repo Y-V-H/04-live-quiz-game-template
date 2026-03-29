@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { User, Game } from '../types';
+import { User, Game, Player } from '../types';
 import type { WebSocket } from 'ws';
 
 interface handleCreateGameProps {
@@ -41,6 +41,9 @@ export const handleCreateGame = ({ data, clients, ws, games }: handleCreateGameP
     };
 
     games.set(gameId, game);
+
+    const hostPlayer: Player = { name: host.name, index: host.index, score: 0 };
+    game.players.push(hostPlayer);
 
     const preparedData = JSON.stringify(res);
     ws.send(preparedData);
